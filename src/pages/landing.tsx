@@ -28,27 +28,30 @@ type credentials = {
 
 function Landing() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const { setUser } = useUser(); // Use the context
   const navigate = useNavigate();
-
+  const { user, setUser } = useUser(); // <-- Use the context to set user
    
 
   return (
     <div>
       <h1>Landing Page</h1>
       <p>Welcome to the landing page!</p>
-      <GoogleLogin
-        onSuccess={(credentialResponse) => {
-          let resp = credentialResponse as credentialResponse;
-          const user = jwtDecode<credentials>(resp.credential);
-          setUser(user);
-          setIsLoggedIn(true);
-          navigate('/home');
-        }}
-        onError={() => {
-          alert('Login Failed');
-        }}
-      />
+      {
+        user ? 'welcome back' : 
+        <GoogleLogin
+          onSuccess={(credentialResponse) => {
+            let resp = credentialResponse as credentialResponse;
+            const user = jwtDecode<credentials>(resp.credential);
+            setUser(user); // <-- Save user in context
+
+            setIsLoggedIn(true);
+            navigate('/home');
+          }}
+          onError={() => {
+            alert('Login Failed');
+          }}
+        />
+      }
     </div>
   );
 }

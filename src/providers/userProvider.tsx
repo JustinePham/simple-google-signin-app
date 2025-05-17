@@ -1,4 +1,5 @@
-import { createContext, useContext, useState } from 'react';
+import { googleLogout } from '@react-oauth/google';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 type User = {
     sub: string;
@@ -16,24 +17,51 @@ type User = {
     jti: string;
 }
 
+
 type UserContextType = {
   user: User | null;
-  setUser: (user: User) => void;
+  setUser: (user: User | null) => void;
+  logout: () => void;
 };
+
 const UserContext = createContext<UserContextType>({
   user: null,
   setUser: () => {},
+  logout: () => {},
 });
 
-export function UserProvider({ children }) {
-  const [user, setUser]  = useState<User | null>(useContext(UserContext).user ?? null);
+export const UserProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('userInfo');
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('userInfo', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('userInfo');
+    }
+  }, [user]);
+
+  const logout = () => {
+    setUser(null);
+    googleLogout();
+    localStorage.removeItem('userInfo');
+  };
+
   return (
-    <UserContext.Provider value={{ user, setUser }}>
+    <UserContext.Provider value={{ user, setUser, logout }}>
       {children}
     </UserContext.Provider>
   );
-}
+};
 
-export function useUser() {
-  return useContext(UserContext);
-}
+ 
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error('useUser must be used within a UserProvider');
+  }
+  return context;
+};
